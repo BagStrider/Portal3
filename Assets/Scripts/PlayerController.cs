@@ -4,31 +4,52 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private float _mouseAcceleration = 3f;
-    [SerializeField] private float _speed = 2f;
+    [Header("Movement")]
+    [SerializeField] private float _speed;
+    [SerializeField] private float _gravity = -9.81f;
+    [SerializeField] private float _jumpHeight;
+
+    [Header("Camera")]
     [SerializeField] private Camera _camera;
+    [SerializeField] private float _mouseAcceleration;
     [SerializeField] private float _minUp;
     [SerializeField] private float _maxUp;
 
-    private Rigidbody _rb;
+    private CharacterController _characterController;
     private float _xRotation;
+    private Vector3 _velocity;
 
-    private void Start()
+
+    private void Awake()
     {
-        _rb = GetComponent<Rigidbody>();
+        _characterController = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         MouseInput();
 
-        MovementInput();
-     
-        JumpInput();
-    }
+        if(_characterController.isGrounded && _velocity.y < 0)
+        {
+            _velocity.y = -2f;
+        }
 
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
+
+        Vector3 motion = (transform.right * x + transform.forward * z) * _speed;
+
+        if(Input.GetButtonDown("Jump") && _characterController.isGrounded)
+        {
+            _velocity.y = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+        }
+
+        _velocity.y += _gravity * Time.deltaTime;
+
+        _characterController.Move((_velocity + motion) * Time.deltaTime);
+    }
 
     private void MouseInput()
     {
@@ -42,19 +63,6 @@ public class PlayerController : MonoBehaviour
 
         transform.Rotate(Vector3.up * mouseX);
     }
-    private void MovementInput()
-    {
-        Vector3 x = Input.GetAxis("Horizontal") * transform.right;
-        Vector3 y = Input.GetAxis("Vertical") * transform.forward;
 
-        _rb.AddForce((x + y).normalized * _speed);
-    }
 
-    private void JumpInput()
-    {
-        if (Input.GetAxisRaw("Jump") == 1)
-        {
-            _rb.AddForce(transform.up * _speed / 2f, ForceMode.Impulse);
-        }
-    }
 }
